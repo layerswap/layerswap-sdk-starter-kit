@@ -6,31 +6,28 @@ import { buffer } from 'micro';
 
 const getNetworks = async (req, res) => {
   try {
-    const response = await axios.get(`${prodHost}/api/public/networks`, {
+    const response = await axios.get(`${prodHost}/available_networks?version=any`, {
       headers: {
-        accept: `application/json'`,
+        accept: 'application/json',
       },
     });
+
     res.json(response.data);
   } catch (error) {
     res.status(error.response.status).json({ error: error.response.data });
   }
 };
 
-const getQuote = async (req, res) => {
-  const { source, destination, sourceAsset, destinationAsset, refuel } =
-    req.body;
-
+const getRoutes = async (req, res) => {
+  const {
+    source,
+    destination,
+    sourceAsset,
+    destinationAsset,
+    version } = req.body;
   try {
-    const response = await axios.post(
-      `${prodHost}/api/public/quote`,
-      {
-        source,
-        destination,
-        source_asset: sourceAsset,
-        destination_asset: destinationAsset,
-        refuel,
-      },
+    const response = await axios.get(
+      `${prodHost}/available_routes?source=${source}&destination=${destination}&source_asset=${sourceAsset}&destination_asset${destinationAsset}$version=any`,
       {
         headers: {
           accept: 'application/json',
@@ -44,6 +41,37 @@ const getQuote = async (req, res) => {
   }
 };
 
+const getRate = async (req, res) => {
+  const {
+    source,
+    destination,
+    sourceAsset,
+    destinationAsset,
+    refuel,
+  } = req.body;
+  try {
+    let response = await axios.post(
+      `${prodHost}/swap_rate`,
+      {
+        source,
+        destination,
+        source_asset: sourceAsset,
+        destination_asset: destinationAsset,
+        refuel,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response.status).json({ error: error.response.data });
+  }
+};
+
 const createSwap = async (req, res) => {
   const {
     source,
@@ -51,21 +79,19 @@ const createSwap = async (req, res) => {
     amount,
     sourceAsset,
     destinationAsset,
-    sourceAddress,
     destinationAddress,
     refuel,
     referenceId,
   } = req.body;
   try {
     let response = await axios.post(
-      `${prodHost}/api/private/swaps`,
+      `${prodHost}/swaps`,
       {
         source,
         destination,
         amount,
         source_asset: sourceAsset,
         destination_asset: destinationAsset,
-        source_address: sourceAddress,
         destination_address: destinationAddress,
         refuel,
         reference_id: referenceId,
@@ -82,7 +108,7 @@ const createSwap = async (req, res) => {
         swapId: response.data.data.swap_id,
       });
       const result = await axios.get(
-        `${prodHost}/api/private/swaps/${response.data.data.swap_id}`,
+        `${prodHost}/private/swaps/${response.data.data.swap_id}`,
         {
           headers: {
             'X-LS-APIKEY': apiKey,
@@ -104,7 +130,7 @@ const getSwaps = async (req, res) => {
     });
     const responses = await Promise.all(
       swaps.map(({ swapId }) => {
-        return axios.get(`${prodHost}/api/private/swaps/${swapId}`, {
+        return axios.get(`${prodHost}/swaps/${swapId}`, {
           headers: {
             'X-LS-APIKEY': apiKey,
           },
@@ -121,7 +147,7 @@ const getSwaps = async (req, res) => {
 const getSwap = async (req, res) => {
   try {
     const { id } = req.params;
-    const response = await axios.get(`${prodHost}/api/private/swaps/${id}`, {
+    const response = await axios.get(`${prodHost}/swaps/${id}`, {
       headers: {
         'X-LS-APIKEY': apiKey,
       },
@@ -135,13 +161,13 @@ const getSwap = async (req, res) => {
 const deleteSwap = async (req, res) => {
   try {
     const { id } = req.params;
-    const response = await axios.delete(`${prodHost}/api/private/swaps/${id}`, {
+    const response = await axios.delete(`${prodHost}/swaps/${id}`, {
       headers: {
         'X-LS-APIKEY': apiKey,
       },
     });
     if (response.data) {
-      const result = await axios.get(`${prodHost}/api/private/swaps/${id}`, {
+      const result = await axios.get(`${prodHost}/swaps/${id}`, {
         headers: {
           'X-LS-APIKEY': apiKey,
         },
@@ -150,6 +176,22 @@ const deleteSwap = async (req, res) => {
     }
   } catch (error) {
     res.status(400).json({ error: error.response?.data });
+  }
+};
+
+const prepareSwap = async (req, res) => {
+  const { fromAddress } = req.body;
+  try {
+    const response = await axios.get(`${prodHost}/swaps${id}/prepare?from_address=${fromAddress}`, {
+      headers: {
+        'X-LS-APIKEY': apiKey,
+        accept: 'application/json',
+      },
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.log(error);
+    res.status(error.response.status).json({ error: error.response.data });
   }
 };
 
@@ -171,10 +213,12 @@ const webhook = async (req, res) => {
 
 export {
   getNetworks,
-  getQuote,
+  getRoutes,
+  getRate,
   createSwap,
   getSwaps,
   getSwap,
   deleteSwap,
+  prepareSwap,
   webhook,
 };
