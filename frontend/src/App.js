@@ -13,11 +13,11 @@ import {
   Grid,
 } from '@mui/material';
 
-import { useCurrencies, useNetworks, useQuote, useCreateSwap } from './hooks';
+import { useCurrencies, useNetworks, useRate, useCreateSwap } from './hooks';
 
 export default function App() {
   const { sources, destinations } = useNetworks();
-  const { quote, getQuote } = useQuote();
+  const { rate, getRate } = useRate();
   const { currencies, updateCurrencies } = useCurrencies();
   const { createSwap } = useCreateSwap();
   const [destination, setDestination] = useState('');
@@ -44,12 +44,12 @@ export default function App() {
       sourceCurrency &&
       destinationCurrency
     ) {
-      getQuote({
+      getRate({
         source: event.target.value,
         destination,
         sourceAsset: sourceCurrency,
         destinationAsset: destinationCurrency,
-        refuel: true,
+        refuel: false,
       });
     }
   };
@@ -63,12 +63,12 @@ export default function App() {
     });
     setDestination(event.target.value);
     if (source && event.target.value && sourceCurrency && destinationCurrency) {
-      getQuote({
+      getRate({
         source: event.target.value,
         destination,
         sourceAsset: sourceCurrency,
         destinationAsset: destinationCurrency,
-        refuel: true,
+        refuel: false,
       });
     }
   };
@@ -78,22 +78,22 @@ export default function App() {
   };
 
   const showMin = () => {
-    setAmount(quote?.min_amount || 0);
+    setAmount(rate?.min_amount || 0);
   };
 
   const showMax = () => {
-    setAmount(quote?.max_amount || 0);
+    setAmount(rate?.max_amount || 0);
   };
 
   const handleSourceCurrencyChange = event => {
     setSourceCurrency(event.target.value);
     if (source && destination && event.target.value && destinationCurrency) {
-      getQuote({
+      getRate({
         source,
         destination,
         sourceAsset: event.target.value,
         destinationAsset: destinationCurrency,
-        refuel: true,
+        refuel: false,
       });
     }
   };
@@ -101,12 +101,12 @@ export default function App() {
   const handleDestinationCurrencyChange = event => {
     setDestinationCurrency(event.target.value);
     if (source && destination && event.target.value && sourceCurrency) {
-      getQuote({
+      getRate({
         source,
         destination,
         sourceAsset: sourceCurrency,
         destinationAsset: event.target.value,
-        refuel: true,
+        refuel: false,
       });
     }
   };
@@ -123,7 +123,7 @@ export default function App() {
       amount: +amount,
       destinationAddress: address,
       sourceAsset: sourceCurrency,
-      destinationAsset : destinationCurrency,
+      destinationAsset: destinationCurrency,
       refuel: false,
     });
     navigate(`/swaps/${id}`);
@@ -162,7 +162,7 @@ export default function App() {
                     value={source}
                     label="Source"
                     onChange={handleSourceChange}>
-                    {sources.map(({ logo, display_name, name }, index) => (
+                    {sources.filter(s => s.name !== destination).map(({ logo, display_name, name }, index) => (
                       <MenuItem key={index} value={name}>
                         {display_name}
                       </MenuItem>
@@ -179,7 +179,7 @@ export default function App() {
                     value={destination}
                     label="Destination"
                     onChange={handleDestinationChange}>
-                    {destinations.map(({ logo, display_name, name }, index) => (
+                    {destinations.filter(d => d.name !== source).map(({ logo, display_name, name }, index) => (
                       <MenuItem key={index} value={name}>
                         {display_name}
                       </MenuItem>
@@ -202,9 +202,9 @@ export default function App() {
                     id="source-currency-select"
                     value={sourceCurrency}
                     onChange={handleSourceCurrencyChange}>
-                    {currencies.map(({ logo, display_name, name }, index) => (
-                      <MenuItem key={index} value={name}>
-                        {display_name}
+                    {currencies.map(({ asset }, index) => (
+                      <MenuItem key={index} value={asset}>
+                        {asset}
                       </MenuItem>
                     ))}
                   </Select>
@@ -218,9 +218,9 @@ export default function App() {
                     id="destination-currency-select"
                     value={destinationCurrency}
                     onChange={handleDestinationCurrencyChange}>
-                    {currencies.map(({ logo, display_name, name }, index) => (
-                      <MenuItem key={index} value={name}>
-                        {display_name}
+                    {currencies.map(({ asset }, index) => (
+                      <MenuItem key={index} value={asset}>
+                        {asset}
                       </MenuItem>
                     ))}
                   </Select>
@@ -242,13 +242,13 @@ export default function App() {
                     onClick={showMax}>
                     max
                   </Button>
-                  {quote?.min_amount && quote?.max_amount && (
+                  {rate?.min_amount && rate?.max_amount && (
                     <p style={{ margin: '0 2px' }}>
-                      Range: {quote.min_amount} - {quote.max_amount}
+                      Range: {rate.min_amount} - {rate.max_amount}
                     </p>
                   )}
                 </div>
-                {quote?.fee_amount && <p>Fee: {quote.fee_amount}</p>}
+                {rate?.fee_amount && <p>Fee: {rate.fee_amount}</p>}
               </Grid>
               <Grid item>
                 <TextField

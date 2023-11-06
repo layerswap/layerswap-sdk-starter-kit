@@ -14,8 +14,8 @@ const useNetworks = () => {
         if (response.error) {
           console.log('error getting networks', response.error);
         } else {
-          setSources(response.data.sources);
-          setDestinations(response.data.destinations);
+          setSources(response.data);
+          setDestinations(response.data);
         }
       } catch (error) {
         console.log('error getting networks', error);
@@ -31,23 +31,24 @@ const useNetworks = () => {
   };
 };
 
-const useQuote = () => {
-  const [quote, setQuote] = useState({});
-  const getQuote = async body => {
+const useRate = () => {
+  const [rate, setRate] = useState({});
+  const getRate = async body => {
     try {
-      const { data: response } = await axios.post(`${API_URL}/quote`, body);
+      const { data: response } = await axios.post(`${API_URL}/getRate`, body);
+      
       if (response.error) {
-        console.log('error getting quote', response.error);
+        console.log('error getting rate', response.error);
       } else {
-        setQuote(response.data);
+        setRate(response.data);
       }
     } catch (error) {
-      console.log('error getting quote', error);
+      console.log('error getting rate', error);
     }
   };
   return {
-    quote,
-    getQuote,
+    rate,
+    getRate,
   };
 };
 
@@ -80,12 +81,12 @@ const useGetSwap = () => {
       try {
         const { data: response } = await axios.get(`${API_URL}/swaps/${id}`);
         if (response.error) {
-          console.log('error getting networks', response.error);
+          console.log('error getting swap', response.error);
         } else {
           setSwap(response.data);
         }
       } catch (error) {
-        console.log('error getting networks', error);
+        console.log('error getting swap', error);
       }
     };
 
@@ -119,12 +120,12 @@ const useSwaps = () => {
     try {
       const { data: response } = await axios.delete(`${API_URL}/swaps/${id}`);
       if (response.error) {
-        console.log('error delleting swap by id', response.error);
+        console.log('error deleting swap by id', response.error);
       } else {
         return response;
       }
     } catch (error) {
-      console.log('error delleting swap by id', error);
+      console.log('error deleting swap by id', error);
     }
   };
 
@@ -157,13 +158,11 @@ const useCurrencies = () => {
     if (filterBy) {
       const foundData = data.find(source => source.name === filterBy);
       if (foundData) {
-        foundData.networks.forEach(network => {
-          network.assets.forEach(asset => {
+        foundData.currencies.forEach(asset => {
             if (currencies.findIndex(item => item.name === asset.name) === -1) {
               currencies.push(asset);
             }
           });
-        });
       }
     }
     return currencies;
@@ -179,7 +178,7 @@ const useWebHook = () => {};
 
 export {
   useNetworks,
-  useQuote,
+  useRate,
   useCreateSwap,
   useCurrencies,
   useGetSwap,
